@@ -5,6 +5,7 @@
 package com.poli.servidorchat.view;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -19,6 +20,7 @@ import javax.swing.JOptionPane;
 public class JFrameChatServer extends javax.swing.JFrame {
 
     private ServerSocket serverSocket;
+    private DataOutputStream dataOutputStream;
     public static final String CLOSING_ORDER = "Chao";
     /**
      * Creates new form JFrameChatServer
@@ -132,17 +134,26 @@ public class JFrameChatServer extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
-
+        try {
+            dataOutputStream.flush();
+            dataOutputStream.writeUTF(this.jTextFieldMessage.getText());
+            this.jTextFieldMessage.setText("");
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(null, "Imposible conectar con el servidor.", "Error", JOptionPane.ERROR_MESSAGE);
+            Logger.getLogger(JFrameChatServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }//GEN-LAST:event_jButtonSendActionPerformed
 
     private void jButtonStartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonStartActionPerformed
+        Socket clientSocket = null;
         try {
             int port = Integer.parseInt(this.jTextFieldPort.getText());
             this.jTextAreaLog.append("Esperando conexiones...\n");
             this.serverSocket = new ServerSocket(port);
-            Socket clientSocket = this.serverSocket.accept();
-            this.jTextAreaLog.append("Servidor iniciado y contestando OK\n");
+            clientSocket = this.serverSocket.accept();
+            this.dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
             DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
+            this.jTextAreaLog.append("Servidor iniciado y contestando OK\n");
             Thread listeningThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -152,7 +163,8 @@ public class JFrameChatServer extends javax.swing.JFrame {
                             incomingMessage = dataInputStream.readUTF();
                             System.out.println("Inc mess:" + incomingMessage);
                             jTextAreaLog.append(incomingMessage + "\n");
-                        } while(incomingMessage.equalsIgnoreCase(CLOSING_ORDER));
+                        } while(!incomingMessage.equalsIgnoreCase(CLOSING_ORDER));
+                        jTextAreaLog.append("El cliente ha abandonado.");
                     } catch (IOException ex) {
                         JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                     }
