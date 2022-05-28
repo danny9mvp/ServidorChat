@@ -20,8 +20,11 @@ import javax.swing.JOptionPane;
 public class JFrameChatServer extends javax.swing.JFrame {
 
     private ServerSocket serverSocket;
+    private Socket clientSocket;
+    private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
     public static final String CLOSING_ORDER = "Chao";
+
     /**
      * Creates new form JFrameChatServer
      */
@@ -145,40 +148,44 @@ public class JFrameChatServer extends javax.swing.JFrame {
     }//GEN-LAST:event_jButtonSendActionPerformed
 
     private void jButtonStartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonStartActionPerformed
-        Socket clientSocket = null;
+        //Socket clientSocket = null;
+        this.jTextAreaLog.append("Esperando conexiones...\n");
         try {
             int port = Integer.parseInt(this.jTextFieldPort.getText());
-            this.jTextAreaLog.append("Esperando conexiones...\n");
             this.serverSocket = new ServerSocket(port);
-            clientSocket = this.serverSocket.accept();
-            this.dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
-            DataInputStream dataInputStream = new DataInputStream(clientSocket.getInputStream());
-            this.jTextAreaLog.append("Servidor iniciado y contestando OK\n");
-            Thread listeningThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    String incomingMessage = "";
+            jTextAreaLog.append("Servidor iniciado y contestando OK\n");
+            new Thread ( () -> {
+                while (true) {
+                    
                     try {
-                        do {
-                            incomingMessage = dataInputStream.readUTF();
-                            System.out.println("Inc mess:" + incomingMessage);
-                            jTextAreaLog.append(incomingMessage + "\n");
-                        } while(!incomingMessage.equalsIgnoreCase(CLOSING_ORDER));
-                        jTextAreaLog.append("El cliente ha abandonado.");
+                        clientSocket = serverSocket.accept();
+                        dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
+                        dataInputStream = new DataInputStream(clientSocket.getInputStream());
+                        Thread listeningThread = new Thread(() -> {
+                            String incomingMessage = "";
+                            try {
+                                do {
+                                    incomingMessage = dataInputStream.readUTF();
+                                    System.out.println("Inc mess:" + incomingMessage);
+                                    jTextAreaLog.append(incomingMessage + "\n");
+                                } while (!incomingMessage.equalsIgnoreCase(CLOSING_ORDER));
+                                jTextAreaLog.append("El cliente ha abandonado.");
+                            } catch (IOException ex) {
+                                JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        });
+                        listeningThread.start();
                     } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        Logger.getLogger(JFrameChatServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
-
-            });
-            listeningThread.start();
+            }).start();
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             Logger.getLogger(JFrameChatServer.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NumberFormatException ex2) {
             JOptionPane.showMessageDialog(this, "Número de puerto no válido.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-
     }//GEN-LAST:event_jButtonStartActionPerformed
 
     /**
