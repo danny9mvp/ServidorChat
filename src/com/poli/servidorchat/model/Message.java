@@ -5,19 +5,29 @@
 package com.poli.servidorchat.model;
 
 /**
+ * Clase modelo para la lógica de transmisión de mensajes.
  *
- * @author dannymvp
  */
 public class Message {
-    private String username;
+    private int messageType;
+    private String from;
     private String content;
+    private String to;
 
-    public String getUsername() {
-        return username;
+    public int getMessageType() {
+        return messageType;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setMessageType(int messageType) {
+        this.messageType = messageType;
+    }
+    
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
     }
 
     public String getContent() {
@@ -27,6 +37,13 @@ public class Message {
     public void setContent(String content) {
         this.content = content;
     }
-    
-    
+
+    public String getTo() {
+        return to;
+    }
+
+    public void setTo(String to) {
+        this.to = to;
+    }
+  
 }

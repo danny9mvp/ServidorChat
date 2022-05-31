@@ -4,8 +4,7 @@
  */
 package com.poli.servidorchat.view;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import com.poli.servidorchat.model.ClientHandler;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -14,16 +13,12 @@ import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 /**
- *
- * @author dannymvp
+ * Esta clase controla toda la interfaz de usuario del servidor.
+ * 
  */
 public class JFrameChatServer extends javax.swing.JFrame {
 
-    private ServerSocket serverSocket;
-    private Socket clientSocket;
-    private DataInputStream dataInputStream;
-    private DataOutputStream dataOutputStream;
-    public static final String CLOSING_ORDER = "Chao";
+    private ServerSocket serverSocket;   
 
     /**
      * Creates new form JFrameChatServer
@@ -32,6 +27,8 @@ public class JFrameChatServer extends javax.swing.JFrame {
         initComponents();
         setTitle("Servidor Chat");
         this.jTextAreaLog.setEditable(false);
+        setLocationRelativeTo(null);
+        this.jButtonStop.setEnabled(false);        
     }
 
     /**
@@ -49,9 +46,8 @@ public class JFrameChatServer extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextAreaLog = new javax.swing.JTextArea();
         jLabel2 = new javax.swing.JLabel();
-        jTextFieldMessage = new javax.swing.JTextField();
-        jButtonSend = new javax.swing.JButton();
         jButtonStart = new javax.swing.JButton();
+        jButtonStop = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -63,17 +59,17 @@ public class JFrameChatServer extends javax.swing.JFrame {
 
         jLabel2.setText("Log del servidor:");
 
-        jButtonSend.setText("Enviar");
-        jButtonSend.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonSendActionPerformed(evt);
-            }
-        });
-
         jButtonStart.setText("Iniciar servidor");
         jButtonStart.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonStartActionPerformed(evt);
+            }
+        });
+
+        jButtonStop.setText("Detener servidor");
+        jButtonStop.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonStopActionPerformed(evt);
             }
         });
 
@@ -86,10 +82,6 @@ public class JFrameChatServer extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jTextFieldMessage)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonSend))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel2)
                             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -100,6 +92,8 @@ public class JFrameChatServer extends javax.swing.JFrame {
                 .addContainerGap())
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(jButtonStart)
+                .addGap(18, 18, 18)
+                .addComponent(jButtonStop)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -110,15 +104,13 @@ public class JFrameChatServer extends javax.swing.JFrame {
                     .addComponent(jLabel1)
                     .addComponent(jTextFieldPort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButtonStart)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonStart)
+                    .addComponent(jButtonStop))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 37, Short.MAX_VALUE)
                 .addComponent(jLabel2)
                 .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldMessage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButtonSend))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 165, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -135,51 +127,30 @@ public class JFrameChatServer extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
-        try {
-            dataOutputStream.flush();
-            dataOutputStream.writeUTF(this.jTextFieldMessage.getText());
-            this.jTextFieldMessage.setText("");
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(null, "Imposible conectar con el servidor.", "Error", JOptionPane.ERROR_MESSAGE);
-            Logger.getLogger(JFrameChatServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }//GEN-LAST:event_jButtonSendActionPerformed
-
+    /***
+     * Este método controla la lógica para iniciar el servidor de chat desde el botón "Iniciar servidor".
+     * @param evt el evento disparado al hacer click en el botón.
+     */
     private void jButtonStartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonStartActionPerformed
-        //Socket clientSocket = null;
         this.jTextAreaLog.append("Esperando conexiones...\n");
         try {
             int port = Integer.parseInt(this.jTextFieldPort.getText());
             this.serverSocket = new ServerSocket(port);
             jTextAreaLog.append("Servidor iniciado y contestando OK\n");
-            new Thread ( () -> {
-                while (true) {
+            new Thread(() -> {
+                while (!serverSocket.isClosed()) {
                     
                     try {
-                        clientSocket = serverSocket.accept();
-                        dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
-                        dataInputStream = new DataInputStream(clientSocket.getInputStream());
-                        Thread listeningThread = new Thread(() -> {
-                            String incomingMessage = "";
-                            try {
-                                do {
-                                    incomingMessage = dataInputStream.readUTF();
-                                    System.out.println("Inc mess:" + incomingMessage);
-                                    jTextAreaLog.append(incomingMessage + "\n");
-                                } while (!incomingMessage.equalsIgnoreCase(CLOSING_ORDER));
-                                jTextAreaLog.append("El cliente ha abandonado.");
-                            } catch (IOException ex) {
-                                JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-                        });
-                        listeningThread.start();
+                        Socket clientSocket = serverSocket.accept();
+                        ClientHandler clientHandler = new ClientHandler(clientSocket, jTextAreaLog);
+                        Thread clientHandlerThread = new Thread(clientHandler);
+                        clientHandlerThread.start();            
                     } catch (IOException ex) {
                         Logger.getLogger(JFrameChatServer.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             }).start();
+            stopServerInterface();
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             Logger.getLogger(JFrameChatServer.class.getName()).log(Level.SEVERE, null, ex);
@@ -187,7 +158,50 @@ public class JFrameChatServer extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Número de puerto no válido.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_jButtonStartActionPerformed
-
+    /***
+     * Este método controla la lógica para detener el servidor de chat desde el botón "Detener servidor".
+     * @param evt el evento disparado al hacer click en el botón.
+     */
+    private void jButtonStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonStopActionPerformed
+        closeServerSocket();
+        startServerInterface();
+        JOptionPane.showMessageDialog(this, "Has cerrado el servidor de chat.", "Información", JOptionPane.INFORMATION_MESSAGE);           
+    }//GEN-LAST:event_jButtonStopActionPerformed
+     /***
+     * Este método controla la visibilidad de aquellos campos necesarios para iniciar el servidor desde la interfaz de usuario.
+     */
+    private void startServerInterface(){
+        if(!this.jTextFieldPort.isEnabled())
+            this.jTextFieldPort.setEnabled(true);
+        if(!this.jButtonStart.isEnabled())
+            this.jButtonStart.setEnabled(true);
+        if(this.jButtonStop.isEnabled())
+            this.jButtonStop.setEnabled(false);
+    }
+     /***
+     * Este método controla la visibilidad de aquellos campos necesarios para detener el servidor desde la interfaz de usuario.
+     */
+    private void stopServerInterface(){
+        if(this.jTextFieldPort.isEnabled())
+            this.jTextFieldPort.setEnabled(false);
+        if(this.jButtonStart.isEnabled())
+            this.jButtonStart.setEnabled(false);
+        if(!this.jButtonStop.isEnabled())
+            this.jButtonStop.setEnabled(true);
+    }
+     /***
+     * Este método cierra de forma apropiada el objeto ServerSocket una vez hacemos click en el botón "Detener servidor".
+     */
+    public void closeServerSocket() {
+        try {
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+        } catch (IOException e) {
+            Logger.getLogger(JFrameChatServer.class.getName()).log(Level.SEVERE, null, e);
+        }
+    }
+    
     /**
      * @param args the command line arguments
      */
@@ -224,14 +238,13 @@ public class JFrameChatServer extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButtonSend;
     private javax.swing.JButton jButtonStart;
+    private javax.swing.JButton jButtonStop;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextArea jTextAreaLog;
-    private javax.swing.JTextField jTextFieldMessage;
     private javax.swing.JTextField jTextFieldPort;
     // End of variables declaration//GEN-END:variables
 }
